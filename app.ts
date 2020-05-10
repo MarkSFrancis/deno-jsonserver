@@ -1,11 +1,12 @@
 import { serve } from 'https://deno.land/std/http/server.ts';
 import { JsonHttp } from './json-http.ts';
-import { DbService, Db } from './db.ts'
+import { Db } from './db.ts'
+import { Api } from './api.ts';
 import { getArgs } from './args.ts';
 
 const { port, dbPath } = getArgs();
 const appDb = new Db(dbPath);
-const app = new DbService(new JsonHttp(), appDb);
+const app = new Api(new JsonHttp(), appDb);
 
 const server = serve({ port });
 
