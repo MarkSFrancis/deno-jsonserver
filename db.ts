@@ -128,7 +128,7 @@ export class DbService {
 export class Db {
   private static canWrite = true;
   private static canRead = true;
-  dbCache: any = {};
+  dbCache: any;
 
   constructor(private dbFileLocation: string = './db.json') {
     this.runWatcher(dbFileLocation);
@@ -152,6 +152,9 @@ export class Db {
   }
 
   async load() {
+    if (!this.dbCache) {
+      await this.reloadDb();
+    }
     return this.dbCache;
   }
 
