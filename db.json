@@ -1,8 +1,10 @@
 {
-  "people": [{
+  "people": [
+    {
       "id": 1,
       "name": "John Smith",
-      "emails": [{
+      "emails": [
+        {
           "id": 1,
           "value": "1@na.com"
         },
@@ -15,13 +17,18 @@
     {
       "id": 2,
       "name": "Sam Jones",
-      "emails": [{
+      "emails": [
+        {
           "id": 3,
           "value": "3@na.com"
         },
         {
           "id": 4,
           "value": "4@na.com"
+        },
+        {
+          "value": "5@na.com",
+          "id": 5
         }
       ]
     }

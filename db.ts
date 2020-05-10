@@ -16,8 +16,10 @@ export class DbService {
         return await this.get(path);
       case 'POST':
         return await this.create(path, body);
-      case 'PUT':
+      case 'PATCH':
         return await this.update(path, body);
+      case 'PUT':
+        return await this.replace(path, body);
       case 'DELETE':
         return await this.delete(path);
     }
@@ -46,7 +48,7 @@ export class DbService {
   async create(path: string[], item: any): Promise<Response> {
     const db = await this.db.load();
 
-    const parent = this.get(path);
+    const parent = this.db.getElement(path, db);
     if (!Array.isArray(parent)) {
       return this.jsonHttp.notFound();
     }
@@ -63,6 +65,23 @@ export class DbService {
   }
 
   async update(path: string[], item: any): Promise<Response> {
+    const db = await this.db.load();
+
+    const parent = this.db.getElement(path.slice(0, path.length - 1), db);
+
+    let response = this.jsonHttp.notFound();
+    this.db.replaceChildById(parent, path[path.length - 1], elem => {
+      Object.assign(item, elem);
+
+      response = this.jsonHttp.ok(item);
+      return item;
+    });
+
+    await this.db.save(db);
+    return response;
+  }
+
+  async replace(path: string[], item: any): Promise<Response> {
     const db = await this.db.load();
 
     const parent = this.db.getElement(path.slice(0, path.length - 1), db);
@@ -107,19 +126,33 @@ export class DbService {
 }
 
 export class Db {
+  private static canWrite = true;
+  private static canRead = true;
+  dbCache: any = {};
+
   constructor(private dbFileLocation: string = './db.json') {
+    this.runWatcher(dbFileLocation);
   }
 
   async save(db: any) {
-    const dbFile = encoding.encode(JSON.stringify(db, null, 2));
-    await Deno.writeFile(this.dbFileLocation, dbFile);
+    this.dbCache = db;
+
+    if (Db.canWrite) {
+      try {
+        const dbFile = encoding.encode(JSON.stringify(db, null, 2));
+        await Deno.writeFile(this.dbFileLocation, dbFile);
+      } catch (err) {
+        if (err instanceof Deno.errors.PermissionDenied) {
+          Db.canWrite = false;
+        } else {
+          console.error("Couldn't save db", err);
+        }
+      }
+    }
   }
 
   async load() {
-    const dbFile = await Deno.readFile(this.dbFileLocation);
-    const db = JSON.parse(encoding.decode(dbFile));
-
-    return db;
+    return this.dbCache;
   }
 
   getElement(path: string[], db: any) {
@@ -182,5 +215,41 @@ export class Db {
     }
 
     return parent[name];
+  }
+
+  private async runWatcher(dbPath: string) {
+    if (!Db.canRead) {
+      return;
+    }
+
+    try {
+      const watcher = Deno.watchFs(dbPath);
+      for await (const _ of watcher) {
+        this.reloadDb();
+      }
+    } catch (err) {
+      if (err instanceof Deno.errors.PermissionDenied) {
+        Db.canRead = false;
+      } else {
+        console.error('Db watcher failed to connect', err);
+      }
+    }
+  }
+
+  private async reloadDb() {
+    if (!Db.canRead) {
+      return;
+    }
+
+    try {
+      const dbFile = await Deno.readFile(this.dbFileLocation);
+      this.dbCache = JSON.parse(encoding.decode(dbFile));
+    } catch (err) {
+      if (err instanceof Deno.errors.PermissionDenied) {
+        Db.canRead = false;
+      } else {
+        console.error("Couldn't reload db", err);
+      }
+    }
   }
 }

@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std/http/server.ts';
 import { JsonHttp } from './json-http.ts';
-import { DbService } from './db.ts'
+import { DbService, Db } from './db.ts'
+import { getArgs } from './args.ts';
 
-const port = parseInt(<string>Deno.env.get('PORT')) || 8000;
-const app = new DbService(new JsonHttp());
+const { port, dbPath } = getArgs();
+const appDb = new Db(dbPath);
+const app = new DbService(new JsonHttp(), appDb);
 
 const server = serve({ port });
 
