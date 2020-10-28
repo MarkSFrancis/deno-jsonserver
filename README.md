@@ -1,6 +1,6 @@
 # Deno REST/JSON Server
 <div>
-  <img alt="deno logo" src="https://deno.land/images/deno_logo_3.svg" width=200 height=200 />
+  <img alt="deno logo" src="https://deno.land/logo.svg" width=200 height=200 />
 </div>
 A full REST API, optionally powered by a single JSON file as a database
 
